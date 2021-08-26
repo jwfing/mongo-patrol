@@ -83,7 +83,7 @@ public class App
                                 long end = System.currentTimeMillis();
                                 if (end - begin >= 10) {
                                     try {
-                                        LCObject record = new LCObject("PatrolRecord");
+                                        LCObject record = new LCObject("Suspect");
                                         record.put("database", databaseName);
                                         record.put("collection", collectionName);
                                         record.put("document", jsonObject);
