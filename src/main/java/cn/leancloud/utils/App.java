@@ -13,6 +13,7 @@ import org.bson.codecs.*;
 import org.bson.codecs.configuration.CodecRegistries;
 import org.bson.codecs.configuration.CodecRegistry;
 import com.google.gson.JsonObject;
+import org.bson.json.JsonWriterSettings;
 
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -34,8 +35,7 @@ public class App
             asList(new ValueCodecProvider(),
                     new BsonValueCodecProvider(),
                     new DocumentCodecProvider(),
-                    new JsonDBRefCodecProvider(),
-                    new DBRefCodecProvider(),
+                    new JsonDBRefCodecProvider(), //new DBRefCodecProvider(),
                     new DBObjectCodecProvider(),
                     new BsonValueCodecProvider(),
                     new GeoJsonCodecProvider(),
@@ -48,11 +48,17 @@ public class App
             DEFAULT_BSON_TYPE_CLASS_MAP
     );
 
+    private static JsonWriterSettings settings =JsonWriterSettings.builder()
+            .dateTimeConverter(new JsonDateTimeConverter())
+            .objectIdConverter(new JsonObjectIdConverter())
+            .build();
+
     private static Random rand = new Random();
     private static Gson gson = new Gson();
 
     private static void scanCluster(String mongodbUri) {
-        try (MongoClient mongoClient = MongoClients.create(mongodbUri)) {
+        String cluster = mongodbUri.substring(0, 4);
+        try (MongoClient mongoClient = MongoClients.create("mongodb://" + mongodbUri)) {
             MongoCursor<String> dbIterator = mongoClient.listDatabaseNames().iterator();
             while (dbIterator.hasNext()) {
                 String databaseName = dbIterator.next();
@@ -72,21 +78,23 @@ public class App
                         try {
                             int range = documentCount > 200? 200: (int) documentCount;
                             int skip = rand.nextInt(range);
-                            Document doc = collection.find(exists("_id"))
+                            Document doc = collection.find(exists("createdAt"))
                                     .sort(orderBy(descending("createdAt")))
                                     .skip(skip)
                                     .first();
                             if (null != doc) {
-                                String docJson = doc.toJson(documentCodec);
+                                String docJson = doc.toJson(settings, documentCodec);
                                 long begin = System.currentTimeMillis();
                                 JsonObject jsonObject = gson.fromJson(docJson, JsonObject.class);
                                 long end = System.currentTimeMillis();
                                 if (end - begin >= 10) {
                                     try {
                                         LCObject record = new LCObject("Suspect");
+                                        record.put("cluster", cluster);
                                         record.put("database", databaseName);
                                         record.put("collection", collectionName);
-                                        record.put("document", jsonObject);
+                                        //record.put("document", jsonObject);
+                                        record.put("docJson", docJson);
                                         record.save();
                                     } catch (Exception ex) {
                                         ex.printStackTrace();

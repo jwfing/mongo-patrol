@@ -19,12 +19,13 @@ public class JsonDBRefCodec implements Codec<DBRef> {
 
     public void encode(BsonWriter writer, DBRef value, EncoderContext encoderContext) {
         writer.writeStartDocument();
-        writer.writeString("_class", value.getCollectionName());
-        writer.writeName("_objectId");
+        writer.writeString("__type", "Pointer");
+        writer.writeString("className", value.getCollectionName());
+        writer.writeName("objectId");
         Codec codec = this.registry.get(value.getId().getClass());
         codec.encode(writer, value.getId(), encoderContext);
         if (value.getDatabaseName() != null) {
-            writer.writeString("_database", value.getDatabaseName());
+            writer.writeString("database", value.getDatabaseName());
         }
 
         writer.writeEndDocument();
