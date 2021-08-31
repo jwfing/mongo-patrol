@@ -118,29 +118,34 @@ public class App
 
     public static void main( String[] args )
     {
+        if (args.length < 1) {
+            System.out.println("Usage: app mongodbcluster(all, clusterName, or raw mongo Uri)");
+            return;
+        }
+        String confPath = ".";
+        String targetCluster = null;
+        if (args.length > 1) {
+            confPath = args[0];
+            targetCluster = args[1];
+        } else {
+            targetCluster = args[0];
+        }
         Properties prop = new Properties();
-        try (InputStream input = new FileInputStream("./mongocluster.properties")) {
+        try (InputStream input = new FileInputStream(confPath + "/mongocluster.properties")) {
             // load a properties file
             prop.load(input);
         } catch (IOException ex) {
             ex.printStackTrace();
         }
-        if (args.length < 1) {
-            System.out.println("Usage: app mongodbcluster(all, clusterName, or raw mongo Uri)");
-            return;
-        }
         List<String> clusters = new ArrayList<>(prop.entrySet().size());
-        if (args[0].equalsIgnoreCase("all")) {
+        if (targetCluster.equalsIgnoreCase("all")) {
             for (Map.Entry entry: prop.entrySet()) {
                 clusters.add((String) entry.getValue());
             }
+        } else if (prop.containsKey(targetCluster)) {
+            clusters.add(prop.getProperty(targetCluster));
         } else {
-            String targetCluster = (String) prop.get(args[0]);
-            if (null == targetCluster || targetCluster.length() < 1) {
-                clusters.add(args[0]);
-            } else {
-                clusters.add(targetCluster);
-            }
+            clusters.add(targetCluster);
         }
 
         LeanCloud.initialize("RGM6sPnzVjLxva3WBR5CBrRo-gzGzoHsz", "hU4UT7ornEsiyyj9GCdVRJ8D",
